@@ -63,19 +63,11 @@ void ws2811_reset(void) {
   for (i = 0; i < 1000; i++) {
     WS2811_WAIT_500NS();
   }
-  WS2811_HIGH();
-  for (i = 0; i < 10; i++) {
-    WS2811_WAIT_500NS();
-  }
 }
 
 void ws2811_write_rgb(uint8_t r, uint8_t g, uint8_t b) {
   uint32_t color;
   uint32_t bit;
-
-  WS2811_LOW();
-  WS2811_WAIT_500NS();
-  WS2811_WAIT_500NS();
 
   color = (r << 16) | (g << 8) | b;
   bit = 0x800000;
@@ -87,8 +79,6 @@ void ws2811_write_rgb(uint8_t r, uint8_t g, uint8_t b) {
     }
     bit >>= 1;
   }
-
-  WS2811_HIGH();
 }
 
 

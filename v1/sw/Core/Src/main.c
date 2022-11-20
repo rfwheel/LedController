@@ -94,8 +94,8 @@ int main(void)
   while (1)
   {
     HAL_Delay(1000);
-    ws2811_reset();
     ws2811_write_rgb(0xff, 0x00, 0xaa);
+    ws2811_reset();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
