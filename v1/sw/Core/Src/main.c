@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ws2811_bitbang.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,12 +90,12 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  ws2811_reset();
   while (1)
   {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
     HAL_Delay(1000);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    HAL_Delay(1000);
+    ws2811_reset();
+    ws2811_write_rgb(0xff, 0x00, 0xaa);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
