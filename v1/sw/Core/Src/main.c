@@ -63,7 +63,7 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  uint8_t brightness;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -93,8 +93,10 @@ int main(void)
   ws2811_reset();
   while (1)
   {
-    HAL_Delay(1000);
-    ws2811_write_rgb(0xff, 0x00, 0xaa);
+    HAL_Delay(10);
+    ws2811_write_rgb(0x00, 0x00, brightness);
+    ws2811_write_rgb(0x00, brightness, 0x00);
+    ws2811_write_rgb(brightness++, 0x00, 0x00);
     ws2811_reset();
     /* USER CODE END WHILE */
 

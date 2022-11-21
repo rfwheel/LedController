@@ -69,7 +69,7 @@ void ws2811_write_rgb(uint8_t r, uint8_t g, uint8_t b) {
   uint32_t color;
   uint32_t bit;
 
-  color = (r << 16) | (g << 8) | b;
+  color = (r << 16) | (b << 8) | g;
   bit = 0x800000;
   while (bit) {
     if (color & bit) {
