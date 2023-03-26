@@ -95,6 +95,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    HAL_Delay(500);
+    led_set_pwm_zero();
+    HAL_Delay(500);
+    led_set_pwm_one();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

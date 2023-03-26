@@ -8,6 +8,9 @@
 #define LED_TIM_OC_LOW  0xffff
 #define LED_TIM_OC_HIGH 0
 
+#define LED_GPIO_ALT_FUNC  (0b10 << GPIO_MODER_MODE10_Pos)
+#define LED_GPIO_PA10_AF2  (0b0010 << GPIO_AFRH_AFSEL10_Pos)
+
 #define LED_TIM_OC_OUTPUT  (0b00 << TIM_CCMR2_CC3S_Pos)
 #define LED_TIM_OC_FAST    (TIM_CCMR2_OC3FE) 
 #define LED_TIM_OC_PRELOAD (TIM_CCMR2_OC3PE) 
@@ -17,9 +20,18 @@
 void led_init() {
   uint32_t val;
 
-  TIM1->PSC = 0;
-  TIM1->ARR = LED_TIM_ARR;
+  // PA10 config
+  val = GPIOA->MODER;
+  val &= ~GPIO_MODER_MODE10_Msk;
+  val |= LED_GPIO_ALT_FUNC;
+  GPIOA->MODER = val;
 
+  val = GPIOA->AFR[1];
+  val &= ~GPIO_AFRH_AFSEL10_Msk;
+  val |= LED_GPIO_PA10_AF2;
+  GPIOA->AFR[1] = val;
+
+  // TIM1 CH3 config
   val = TIM1->CCMR2;
   val &= ~(TIM_CCMR2_CC3S_Msk |
            TIM_CCMR2_OC3FE_Msk |
@@ -33,6 +45,16 @@ void led_init() {
           LED_TIM_OC_NOCLEAR);
   TIM1->CCMR2 = val;
 
+  val = TIM1->CCER;
+  val |= TIM_CCER_CC3E;
+  TIM1->CCER = val;
+
+  val = TIM1->BDTR;
+  val |= TIM_BDTR_MOE;
+  TIM1->BDTR = val;
+
+  TIM1->PSC = 0;
+  TIM1->ARR = LED_TIM_ARR;
   TIM1->CCR3 = LED_TIM_OC_ONE;
 }
 
