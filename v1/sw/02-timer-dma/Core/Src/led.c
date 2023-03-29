@@ -17,6 +17,69 @@
 #define LED_TIM_OC_PWM1    (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2) 
 #define LED_TIM_OC_NOCLEAR (0b0 << TIM_CCMR2_OC3CE_Pos) 
 
+#define LED_DMA_VHI_PRIO (DMA_CCR_PL_0 | DMA_CCR_PL_1)
+#define LED_DMA_MSIZE_16 (DMA_CCR_MSIZE_0)
+#define LED_DMA_PSIZE_16 (DMA_CCR_PSIZE_0)
+#define LED_DMA_MEM_INC  (DMA_CCR_MINC)
+#define LED_DMA_CIRCULAR (DMA_CCR_CIRC)
+#define LED_DMA_MEM2TIM  (DMA_CCR_DIR)
+
+#define LED_DMAMUX_REQID (25 << DMAMUX_CxCR_DMAREQ_ID_Pos)
+
+#define LED_DMA_BUFFER_SIZE 48
+
+
+static uint16_t g_led_dma_buffer[LED_DMA_BUFFER_SIZE] = {
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+  LED_TIM_OC_ONE,
+  LED_TIM_OC_ZERO,
+};
+
 
 static void rcc_init(void);
 static void gpio_init(void);
@@ -60,13 +123,11 @@ static void tim_init() {
           LED_TIM_OC_NOCLEAR);
   TIM1->CCMR2 = val;
 
-  val = TIM1->CCER;
-  val |= TIM_CCER_CC3E;
-  TIM1->CCER = val;
+  TIM1->CCER |= TIM_CCER_CC3E;
 
-  val = TIM1->BDTR;
-  val |= TIM_BDTR_MOE;
-  TIM1->BDTR = val;
+  TIM1->BDTR |= TIM_BDTR_MOE;
+
+  TIM1->DIER |= TIM_DIER_UDE;
 
   TIM1->PSC = 0;
   TIM1->ARR = LED_TIM_ARR;
@@ -74,8 +135,19 @@ static void tim_init() {
 }
 
 static void dma_init() {
-  return;
-  // TODO implement
+  DMA1_Channel1->CCR = (LED_DMA_VHI_PRIO |
+                        LED_DMA_MSIZE_16 |
+                        LED_DMA_PSIZE_16 |
+                        LED_DMA_MEM_INC |
+                        LED_DMA_CIRCULAR |
+                        LED_DMA_MEM2TIM);
+  DMA1_Channel1->CNDTR = LED_DMA_BUFFER_SIZE;
+  DMA1_Channel1->CPAR = (uint32_t)&(TIM1->CCR3);
+  DMA1_Channel1->CMAR = (uint32_t)g_led_dma_buffer;
+
+  DMAMUX1_Channel0->CCR = LED_DMAMUX_REQID;
+
+  DMA1_Channel1->CCR |= DMA_CCR_EN;
 }
 
 void led_init() {
