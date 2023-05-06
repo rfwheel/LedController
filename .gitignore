@@ -4,5 +4,6 @@
 *.elf
 *.map
 *.list
+*.swp
 !objects.list
 tags
