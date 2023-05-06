@@ -60,8 +60,8 @@ all: main-build
 main-build: LedControllerV1.elf secondary-outputs
 
 # Tool invocations
-LedControllerV1.elf LedControllerV1.map: $(OBJS) $(USER_OBJS) /home/rfwheel/GitHub/LedController/v1/sw/STM32G030J6MX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "LedControllerV1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"/home/rfwheel/GitHub/LedController/v1/sw/STM32G030J6MX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LedControllerV1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+LedControllerV1.elf LedControllerV1.map: $(OBJS) $(USER_OBJS) ../STM32G030J6MX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "LedControllerV1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"../STM32G030J6MX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LedControllerV1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
