@@ -12,10 +12,10 @@
 #define LED_GPIO_PA10_AF2  (0b0010 << GPIO_AFRH_AFSEL10_Pos)
 
 #define LED_TIM_OC_OUTPUT  (0b00 << TIM_CCMR2_CC3S_Pos)
-#define LED_TIM_OC_FAST    (TIM_CCMR2_OC3FE) 
-#define LED_TIM_OC_PRELOAD (TIM_CCMR2_OC3PE) 
-#define LED_TIM_OC_PWM1    (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2) 
-#define LED_TIM_OC_NOCLEAR (0b0 << TIM_CCMR2_OC3CE_Pos) 
+#define LED_TIM_OC_FAST    (TIM_CCMR2_OC3FE)
+#define LED_TIM_OC_PRELOAD (TIM_CCMR2_OC3PE)
+#define LED_TIM_OC_PWM1    (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2)
+#define LED_TIM_OC_NOCLEAR (0b0 << TIM_CCMR2_OC3CE_Pos)
 
 #define LED_DMA_VHI_PRIO (DMA_CCR_PL_0 | DMA_CCR_PL_1)
 #define LED_DMA_MSIZE_16 (DMA_CCR_MSIZE_0)
@@ -23,6 +23,8 @@
 #define LED_DMA_MEM_INC  (DMA_CCR_MINC)
 #define LED_DMA_CIRCULAR (DMA_CCR_CIRC)
 #define LED_DMA_MEM2TIM  (DMA_CCR_DIR)
+#define LED_DMA_HALF_IRQ (DMA_CCR_HTIE)
+#define LED_DMA_FULL_IRQ (DMA_CCR_TCIE)
 
 #define LED_DMAMUX_REQID (25 << DMAMUX_CxCR_DMAREQ_ID_Pos)
 
@@ -140,7 +142,9 @@ static void dma_init() {
                         LED_DMA_PSIZE_16 |
                         LED_DMA_MEM_INC |
                         LED_DMA_CIRCULAR |
-                        LED_DMA_MEM2TIM);
+                        LED_DMA_MEM2TIM |
+                        LED_DMA_HALF_IRQ |
+                        LED_DMA_FULL_IRQ);
   DMA1_Channel1->CNDTR = LED_DMA_BUFFER_SIZE;
   DMA1_Channel1->CPAR = (uint32_t)&(TIM1->CCR3);
   DMA1_Channel1->CMAR = (uint32_t)g_led_dma_buffer;
@@ -150,12 +154,16 @@ static void dma_init() {
   DMA1_Channel1->CCR |= DMA_CCR_EN;
 }
 
+static void nvic_init() {
+  NVIC->ISER[0] = (1 << DMA1_Channel1_IRQn);
+}
+
 void led_init() {
   rcc_init();
   gpio_init();
   tim_init();
   dma_init();
-  // TODO nvic_init
+  nvic_init();
 }
 
 void led_start() {
@@ -170,5 +178,7 @@ void led_set_pwm_one() {
   TIM1->CCR3 = LED_TIM_OC_ONE;
 }
 
-
+void DMA1_Channel1_IRQHandler(void) {
+  while (1);
+}
 
