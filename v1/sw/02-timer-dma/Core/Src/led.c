@@ -2,11 +2,11 @@
 #include <stm32g0xx_hal.h>
 #include "led.h"
 
-#define LED_TIM_ARR     159
-#define LED_TIM_OC_ZERO 32
-#define LED_TIM_OC_ONE  77
-#define LED_TIM_OC_LOW  0xffff
-#define LED_TIM_OC_HIGH 0
+#define LED_TIM_ARR     79
+#define LED_TIM_OC_ZERO 16
+#define LED_TIM_OC_ONE  38
+#define LED_TIM_OC_LOW  0
+#define LED_TIM_OC_HIGH 0xffff
 
 #define LED_GPIO_ALT_FUNC  (0b10 << GPIO_MODER_MODE10_Pos)
 #define LED_GPIO_PA10_AF2  (0b0010 << GPIO_AFRH_AFSEL10_Pos)
@@ -21,66 +21,32 @@
 #define LED_DMA_MSIZE_16 (DMA_CCR_MSIZE_0)
 #define LED_DMA_PSIZE_16 (DMA_CCR_PSIZE_0)
 #define LED_DMA_MEM_INC  (DMA_CCR_MINC)
-#define LED_DMA_CIRCULAR (DMA_CCR_CIRC)
 #define LED_DMA_MEM2TIM  (DMA_CCR_DIR)
-#define LED_DMA_HALF_IRQ (DMA_CCR_HTIE)
 #define LED_DMA_FULL_IRQ (DMA_CCR_TCIE)
 
 #define LED_DMAMUX_REQID (25 << DMAMUX_CxCR_DMAREQ_ID_Pos)
 
-#define LED_DMA_BUFFER_SIZE 48
+#define BITS_PER_COLOR 8
+#define BITS_PER_LED (BITS_PER_COLOR*NUM_COLORS)
+#define LED_DMA_BUFFER_SIZE (BITS_PER_LED*NUM_LEDS + 1)
 
 
-static uint16_t g_led_dma_buffer[LED_DMA_BUFFER_SIZE] = {
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-  LED_TIM_OC_ONE,
-  LED_TIM_OC_ZERO,
-};
+typedef enum {
+  BLUE = 0,
+  RED,
+  GREEN,
+  NUM_COLORS,
+} Color;
+
+typedef struct {
+  uint8_t color[NUM_COLORS];
+} Led;
+
+
+static Led g_led_strip[NUM_LEDS];
+
+
+static uint16_t led_dma_buffer[LED_DMA_BUFFER_SIZE] = { LED_TIM_OC_LOW };
 
 
 static void rcc_init(void);
@@ -133,7 +99,7 @@ static void tim_init() {
 
   TIM1->PSC = 0;
   TIM1->ARR = LED_TIM_ARR;
-  TIM1->CCR3 = LED_TIM_OC_ONE;
+  TIM1->CCR3 = LED_TIM_OC_LOW;
 }
 
 static void dma_init() {
@@ -141,13 +107,11 @@ static void dma_init() {
                         LED_DMA_MSIZE_16 |
                         LED_DMA_PSIZE_16 |
                         LED_DMA_MEM_INC |
-                        LED_DMA_CIRCULAR |
                         LED_DMA_MEM2TIM |
-                        LED_DMA_HALF_IRQ |
                         LED_DMA_FULL_IRQ);
   DMA1_Channel1->CNDTR = LED_DMA_BUFFER_SIZE;
   DMA1_Channel1->CPAR = (uint32_t)&(TIM1->CCR3);
-  DMA1_Channel1->CMAR = (uint32_t)g_led_dma_buffer;
+  DMA1_Channel1->CMAR = (uint32_t)led_dma_buffer;
 
   DMAMUX1_Channel0->CCR = LED_DMAMUX_REQID;
 
@@ -166,19 +130,46 @@ void led_init() {
   nvic_init();
 }
 
-void led_start() {
+void led_set_color(int pos, uint8_t red, uint8_t green, uint8_t blue) {
+  if (0 > pos || NUM_LEDS <= pos) {
+    return;
+  }
+
+  g_led_strip[pos].color[RED]   = red;
+  g_led_strip[pos].color[GREEN] = green;
+  g_led_strip[pos].color[BLUE]  = blue;
+}
+
+void led_update_strip(void) {
+  uint8_t color;
+  int i, j, k, pos = 0;
+
+  for (i = 0; i < NUM_LEDS; i++) {
+    for (j = 0; j < NUM_COLORS; j++) {
+      color = g_led_strip[i].color[j];
+      for (k = BITS_PER_COLOR-1; k >= 0; k--) {
+        led_dma_buffer[pos++] = ((1 << k) & color) ? LED_TIM_OC_ONE : LED_TIM_OC_ZERO;
+      }
+    }
+  }
+  led_dma_buffer[LED_DMA_BUFFER_SIZE-1] = LED_TIM_OC_LOW;
+
+  DMA1_Channel1->CNDTR = LED_DMA_BUFFER_SIZE;
+  DMA1_Channel1->CMAR = (uint32_t)led_dma_buffer;
+  DMA1_Channel1->CCR |= DMA_CCR_EN;
+  TIM1->CCR3 = LED_TIM_OC_LOW;
   TIM1->CR1 |= TIM_CR1_CEN;
 }
 
-void led_set_pwm_zero() {
-  TIM1->CCR3 = LED_TIM_OC_ZERO;
-}
-
-void led_set_pwm_one() {
-  TIM1->CCR3 = LED_TIM_OC_ONE;
-}
-
 void DMA1_Channel1_IRQHandler(void) {
+  TIM1->CR1 &= ~TIM_CR1_CEN;
+  DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+
+  if ((DMA_ISR_GIF1 | DMA_ISR_HTIF1 | DMA_ISR_TCIF1) == DMA1->ISR) {
+    DMA1->IFCR = DMA_IFCR_CGIF1;
+    return;
+  }
+
   while (1);
 }
 

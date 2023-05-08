@@ -86,17 +86,44 @@ int main(void)
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
   led_init();
-  led_start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  int pos;
   while (1)
   {
-    HAL_Delay(500);
-    led_set_pwm_zero();
-    HAL_Delay(500);
-    led_set_pwm_one();
+    for (pos = 0; pos < NUM_LEDS; pos++) {
+      HAL_Delay(10);
+      led_set_color(pos, 0x20, 0, 0);
+      led_update_strip();
+    }
+    for (pos = NUM_LEDS-1; pos >= 0; pos--) {
+      HAL_Delay(10);
+      led_set_color(pos, 0, 0x20, 0);
+      led_update_strip();
+    }
+    for (pos = 0; pos < NUM_LEDS; pos++) {
+      HAL_Delay(10);
+      led_set_color(pos, 0, 0, 0x20);
+      led_update_strip();
+    }
+    for (pos = NUM_LEDS-1; pos >= 0; pos--) {
+      HAL_Delay(10);
+      led_set_color(pos, 0x20, 0, 0);
+      led_update_strip();
+    }
+    for (pos = 0; pos < NUM_LEDS; pos++) {
+      HAL_Delay(10);
+      led_set_color(pos, 0, 0x20, 0);
+      led_update_strip();
+    }
+    for (pos = NUM_LEDS-1; pos >= 0; pos--) {
+      HAL_Delay(10);
+      led_set_color(pos, 0, 0, 0x20);
+      led_update_strip();
+    }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
