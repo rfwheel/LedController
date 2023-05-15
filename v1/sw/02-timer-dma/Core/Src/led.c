@@ -43,7 +43,7 @@ typedef struct {
 } Led;
 
 
-static Led g_led_strip[NUM_LEDS];
+static Led led_strip[NUM_LEDS];
 
 
 static uint16_t led_dma_buffer[LED_DMA_BUFFER_SIZE] = { LED_TIM_OC_LOW };
@@ -135,9 +135,9 @@ void led_set_color(int pos, uint8_t red, uint8_t green, uint8_t blue) {
     return;
   }
 
-  g_led_strip[pos].color[RED]   = red;
-  g_led_strip[pos].color[GREEN] = green;
-  g_led_strip[pos].color[BLUE]  = blue;
+  led_strip[pos].color[RED]   = red;
+  led_strip[pos].color[GREEN] = green;
+  led_strip[pos].color[BLUE]  = blue;
 }
 
 void led_update_strip(void) {
@@ -146,7 +146,7 @@ void led_update_strip(void) {
 
   for (i = 0; i < NUM_LEDS; i++) {
     for (j = 0; j < NUM_COLORS; j++) {
-      color = g_led_strip[i].color[j];
+      color = led_strip[i].color[j];
       for (k = BITS_PER_COLOR-1; k >= 0; k--) {
         led_dma_buffer[pos++] = ((1 << k) & color) ? LED_TIM_OC_ONE : LED_TIM_OC_ZERO;
       }
@@ -159,6 +159,14 @@ void led_update_strip(void) {
   DMA1_Channel1->CCR |= DMA_CCR_EN;
   TIM1->CCR3 = LED_TIM_OC_LOW;
   TIM1->CR1 |= TIM_CR1_CEN;
+}
+
+void led_clear_strip(void) {
+  Led off = {0};
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    led_strip[i] = off;
+  }
 }
 
 void DMA1_Channel1_IRQHandler(void) {

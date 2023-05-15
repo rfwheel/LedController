@@ -11,6 +11,7 @@
 void led_init(void);
 void led_set_color(int pos, uint8_t red, uint8_t green, uint8_t blue);
 void led_update_strip(void);
+void led_clear_strip(void);
 
 
 #endif /* LED_H */
